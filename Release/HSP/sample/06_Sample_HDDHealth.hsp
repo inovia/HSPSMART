@@ -1,0 +1,44 @@
+#include "hspsmart.as"
+
+	// 
+	title "健康度チェック"
+
+	// 管理者権限を持っているかどうか？
+	if smart_IsCurrentUserLocalAdministrator() == 0{
+		mes "管理者権限が必要です"
+		stop
+	}
+	
+	// 初期化
+	hSmart = smart_Init()
+	
+	// USB/IEEE1394接続のHDDを検出対象にする
+	smart_SetUSB1394 hSmart, FLAG_USB_ALL
+	// IDE/ATA_PASS_THROUGH を使用します(問題がある場合はOFFに)
+	smart_SetAtaPassThroughSmart hSmart, 1
+	// IntelRAID環境下でCSMIを自動有効にする
+	smart_SetCsmiType hSmart, CSMI_TYPE_ENABLE_AUTO
+	
+	// ディスクを検出する(CDIの再検出と同じ)
+	// 初回起動時やディスクが後から追加・変更・削除されたりしたときに実行してください
+	// この処理はやや重いです。再生中の音声が一瞬途切れることもあります。
+	smart_DiskScan hSmart, 1, 1, 0, 1, 1, 0
+	
+	if smart_GetCount(hSmart) <= 0{
+		mes "ディスクがないか、エラーが発生しました"
+		stop
+	}
+	mes "" + smart_GetCount(hSmart) + "台のディスクを検出しました"
+	
+	health = "不明", "良好", "注意", "異常"
+	repeat smart_GetCount(hSmart)
+		// 格納に必要なサイズを取得
+		size = smart_GetInfoStringSizeW(hSmart, cnt, INFO_MODEL)
+		sdim buf, size + 2
+		smart_GetInfoStringW hSmart, cnt, INFO_MODEL, buf, size
+		if stat == 0 {
+			mes ""+cnvwtos(buf) + " の状態は" + health.smart_CheckDiskStatus(hSmart, cnt) + "です"
+		}
+	loop
+	
+	smart_UnInit hSmart

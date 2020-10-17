@@ -1,0 +1,78 @@
+#include "hspsmart.as"
+
+	// ディスクの温度や回転数を取得するサンプル
+	
+	// 管理者権限を持っているかどうか？
+	if smart_IsCurrentUserLocalAdministrator() == 0{
+		mes "管理者権限が必要です"
+		stop
+	}
+
+	title "ディスクを選択してください"
+	
+	// 初期化
+	hSmart = smart_Init()
+	
+	// USB/IEEE1394接続のHDDを検出対象にする
+	smart_SetUSB1394 hSmart, FLAG_USB_ALL
+	// IDE/ATA_PASS_THROUGH を使用します(問題がある場合はOFFに)
+	smart_SetAtaPassThroughSmart hSmart, 1
+	// IntelRAID環境下でCSMIを自動有効にする
+	smart_SetCsmiType hSmart, CSMI_TYPE_ENABLE_AUTO
+	
+	// ディスクを検出する(CDIの再検出と同じ)
+	// 初回起動時やディスクが後から追加・変更・削除されたりしたときに実行してください
+	// この処理はやや重いです。再生中の音声が一瞬途切れることもあります。
+	smart_DiskScan hSmart, 1, 1, 0, 1, 1, 0
+	
+	if smart_GetCount(hSmart) <= 0{
+		dialog "ディスクがないか、エラーが発生しました"
+		end
+	}
+	
+	// ディスク一覧作成
+	sdim disklist, 1024
+	repeat smart_GetCount(hSmart)
+		// 格納に必要なサイズを取得
+		size = smart_GetInfoStringSizeW(hSmart, cnt, INFO_MODEL)
+		sdim buf, size + 2
+		// モデル名取得
+		smart_GetInfoStringW hSmart, cnt, INFO_MODEL, buf, size
+		disklist += cnvwtos(buf) + "\n"
+	loop
+	
+	// GUI
+	width 320, 200
+	objsize 320, 180
+	listbox disklist_id, 0, disklist
+	objsize 320, 20
+	button "選択したディスクの情報を見る", *go
+
+stop
+
+*go
+	cls
+	;width 640, 480
+	
+	list.0 = INFO_MODEL, INFO_TEMPERATURE, INFO_DEVICENOMINALFORMFACTOR, INFO_INTERFACE
+	list.4 = INFO_CURRENTTRANSFERMODE, INFO_POWERONCOUNT, INFO_DETECTEDPOWERONHOURS
+	list_s.0 = "モデル名: %s", "温度: %d度", "フォームファクタ: %s", "インターフェース: %s"
+	list_s.4 = "転送モード: %s", "電源投入回数: %d回", "使用時間: %d時間"
+	
+	repeat length(list)
+		// 文字列情報取得
+		size = smart_GetInfoStringSizeW(hSmart, disklist_id, list.cnt)
+		sdim buf, size + 2
+		smart_GetInfoStringW hSmart, disklist_id, list.cnt, buf, size
+		if stat == 0 {
+			mes strf(list_s.cnt, cnvwtos(buf))
+		}
+		if list.cnt == INFO_MODEL : title cnvwtos(buf)
+		
+		// 数値型取得
+		i = 0
+		smart_GetInfoInt hSmart, disklist_id, list.cnt, i
+		if stat == 0 {
+			mes strf(list_s.cnt, i)
+		}
+	loop

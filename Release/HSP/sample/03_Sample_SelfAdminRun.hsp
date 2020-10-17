@@ -1,0 +1,29 @@
+#include "hspsmart.as"
+#packopt name "sample03"
+
+	// 管理者権限に昇格させる サンプル
+
+	// 実行ファイルを書き出した上で実行してください
+	// エディタ上での実行ではうまく動きません
+	
+	if dir_cmdline != "restart"{
+		// 初回起動
+		if smart_IsCurrentUserLocalAdministrator(){
+			mes "管理者権限つきで既に実行しています"
+		}else{
+			// 管理者権限昇格
+			smart_ShellExecuteExAdminW 0, "restart"
+			if stat == 0{
+				end
+			}else{
+				mes "smart_ShellExecuteExAdminWが失敗しました"
+			}
+		}
+	}else{
+		// 再起動されたとき
+		if smart_IsCurrentUserLocalAdministrator(){
+			mes "管理者権限つきの起動に成功しました"
+		}else{
+			mes "管理者権限つきの起動に失敗しました"
+		}
+	}

@@ -1,0 +1,3 @@
+#runtime "hsp3_64"
+#include "hspsmart64.as"
+#include "06_Sample_HDDHealth.hsp"

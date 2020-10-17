@@ -1,0 +1,51 @@
+#include "hspsmart.as"
+
+	// 管理者権限を持っているかどうか？
+	if smart_IsCurrentUserLocalAdministrator() == 0{
+		mes "管理者権限が必要です"
+		stop
+	}
+	
+	// 初期化
+	hSmart = smart_Init()
+	
+	// USB/IEEE1394接続のHDDを検出対象にする
+	smart_SetUSB1394 hSmart, FLAG_USB_ALL
+	// IDE/ATA_PASS_THROUGH を使用します(問題がある場合はOFFに)
+	smart_SetAtaPassThroughSmart hSmart, 1
+	// IntelRAID環境下でCSMIを自動有効にする
+	smart_SetCsmiType hSmart, CSMI_TYPE_ENABLE_AUTO
+	
+	// ディスクを検出する(CDIの再検出と同じ)
+	// 初回起動時やディスクが後から追加・変更・削除されたりしたときに実行してください
+	// この処理はやや重いです。再生中の音声が一瞬途切れることもあります。
+	smart_DiskScan hSmart, 1, 1, 0, 1, 1, 0
+	
+	if smart_GetCount(hSmart) <= 0{
+		mes "ディスクがないか、エラーが発生しました"
+		stop
+	}
+	
+	// ディスクの情報を更新(S.M.A.R.T.以外)
+	smart_UpdateIdInfo hSmart, 0
+	// ディスクのS.M.A.R.T.情報を更新
+	smart_UpdateSmartInfo hSmart, 0
+	
+	sdim outbuf, 1024
+	repeat smart_GetInfoMax()
+		// 格納に必要なサイズを取得
+		size = smart_GetInfoStringSizeW(hSmart, 0, cnt)
+		sdim buf, size + 2
+		smart_GetInfoStringW hSmart, 0, cnt, buf, size
+		if stat == 0 : outbuf += ENUM_INFO_TYPE_STRING@SMART.cnt + ": " + cnvwtos(buf) + "\n"
+		if INFO_MODEL == cnt : title cnvwtos(buf)
+		
+		// 情報取得
+		i = 0
+		smart_GetInfoInt hSmart, 0, cnt, i
+		if stat == 0 : outbuf += "" + ENUM_INFO_TYPE_STRING@SMART.cnt + ": " + i + "\n"
+	loop
+	
+	mesbox outbuf, 640, 480
+	
+	smart_UnInit hSmart

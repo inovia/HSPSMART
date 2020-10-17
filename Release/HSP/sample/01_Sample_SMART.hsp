@@ -1,0 +1,114 @@
+#include "hspsmart.as"
+
+	// ディスクのS.M.A.R.T.情報を取得するサンプル
+	
+	// 管理者権限を持っているかどうか？
+	if smart_IsCurrentUserLocalAdministrator() == 0{
+		mes "管理者権限が必要です"
+		stop
+	}
+	
+	title "ディスクを選択してください"
+	
+	// 初期化する
+	hSmart = smart_Init()
+	
+	// USB/IEEE1394接続のHDDを検出対象にする
+	smart_SetUSB1394 hSmart, FLAG_USB_ALL
+	// IDE/ATA_PASS_THROUGH を使用します(問題がある場合はOFFに)
+	smart_SetAtaPassThroughSmart hSmart, 1
+	// IntelRAID環境下でCSMIを自動有効にする
+	smart_SetCsmiType hSmart, CSMI_TYPE_ENABLE_AUTO
+	
+	// ディスクを検出する(CDIの再検出と同じ)
+	// 初回起動時やディスクが後から追加・変更・削除されたりしたときに実行してください
+	// この処理はやや重いです。再生中の音声が一瞬途切れることもあります。
+	smart_DiskScan hSmart, 1, 1, 0, 1, 1, 0
+	
+	if smart_GetCount(hSmart) <= 0{
+		dialog "ディスクがないか、エラーが発生しました"
+		smart_UnInit hSmart
+		end
+	}
+	
+	// ディスク一覧作成
+	sdim disklist, 1024
+	repeat smart_GetCount(hSmart)
+		// 格納に必要なサイズを取得
+		size = smart_GetInfoStringSizeW(hSmart, cnt, INFO_MODEL)
+		sdim buf, size + 2
+		// モデル名取得
+		smart_GetInfoStringW hSmart, cnt, INFO_MODEL, buf, size
+		disklist += cnvwtos(buf) + "\n"
+	loop
+	
+	// GUI
+	width 320, 200
+	objsize 320, 180
+	listbox disk_id, 0, disklist
+	objsize 320, 20
+	button "選択したディスクの情報を見る", *go
+
+stop
+*go
+	width 640, 480
+	cls
+	
+	notesel disklist
+	noteget diskname, disk_id
+	title diskname
+	
+	// ディスクの情報を更新(S.M.A.R.T.以外)
+	smart_UpdateIdInfo hSmart, disk_id
+	// ディスクのS.M.A.R.T.情報を更新
+	smart_UpdateSmartInfo hSmart, disk_id
+	
+	// S.M.A.R.T.キー名取得
+	size = smart_GetInfoStringSizeW(hSmart, disk_id, INFO_SMARTKEYNAME)
+	sdim keyname, size + 2
+	smart_GetInfoStringW hSmart, disk_id, INFO_SMARTKEYNAME, keyname, size
+	keyname = cnvwtos(keyname)	// UnicodeからShift_JISに変換
+	
+	// S.M.A.R.T.情報格納変数初期化
+	smart_max = smart_GetSmartMaxAttribute()
+	dim Id, smart_max
+	dim StatusFlags, smart_max
+	dim CurrentValue, smart_max
+	dim WorstValue, smart_max
+	dim ThresholdValue, smart_max
+	ddim RawValue, smart_max
+	
+	// S.M.A.R.T. のデータ取得
+	smart_GetSmartInfoInt64Ex hSmart, disk_id, Id, StatusFlags, CurrentValue, WorstValue, ThresholdValue, RawValue
+	sdim out_smart, 1024
+	out_smart = "ID\t項目名\t\t\t\t\t現在値\t最悪値\t閾値\t生の値\n"
+	repeat smart_max
+		if Id.cnt != 0 {
+			// ID
+			out_smart += strf("%02X", Id.cnt) + "\t"
+			// 項目名
+			smart_att = smart_GetSmartAttributeName(keyname, Id.cnt, dir_cur + "\\smart.ini")
+			out_smart += smart_att
+	
+			// 位置調整用
+			repeat 40-strlen(smart_att)
+				out_smart += " "
+			loop
+			// 現在値
+			out_smart += strf("%d", CurrentValue.cnt) + "\t"
+			// 最悪値
+			out_smart += strf("%d", WorstValue.cnt) + "\t"
+			// しきい値
+			out_smart += strf("%d", ThresholdValue.cnt) + "\t"
+			// 生の値(48bit値[内部は64bit]で返ります)
+			out_smart += strf("0x%012I64X (%I64d)", RawValue.cnt, RawValue.cnt)
+			out_smart += "\n"
+		}
+	loop
+	
+	font "MS Gothic", 12
+	objmode 2, 1
+	mesbox out_smart, 640, 480
+	
+	smart_UnInit hSmart
+	hSmart = 0

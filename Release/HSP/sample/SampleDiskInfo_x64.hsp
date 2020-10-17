@@ -1,0 +1,7 @@
+;#pack "start.ax"
+#include "hspsmart64.as"
+#include "SampleDiskInfo.hsp"
+// ª‚Å #runtime "hsp3cl" ‚ª‚ ‚è‚Ü‚·‚ªA
+// «‚Åã‘‚«‚µ‚Ü‚·B(ÅŒã‚É‘‚¢‚½ #runtime ‚ª—Dæ‚³‚ê‚é‚½‚ß)
+#runtime "hsp3cl_64"
+#packopt name "SampleDiskInfo64"

@@ -1,0 +1,15 @@
+#include "hspsmart.as"
+
+	// 管理者権限で起動するサンプル
+
+	// テキストファイル作成
+	notesel buf : buf = "テスト\nテスト\nテスト"
+	notesave "テスト.txt"
+	
+	// メモ帳を管理者権限つきで起動
+	smart_ShellExecuteExAdminW "notepad", "\"テスト.txt\""
+	if stat == 0{
+		mes "成功"
+	}else{
+		mes "失敗"
+	}

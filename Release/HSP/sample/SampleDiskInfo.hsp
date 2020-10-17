@@ -1,0 +1,221 @@
+#runtime "hsp3cl"
+#packopt name "SampleDiskInfo32"
+#include "hspsmart.as"
+/**
+ * 文字列を右側配置します。
+ */
+#module
+#defcfunc mesRight str s, int max
+	sdim out, max
+	space = max - strlen(s)
+	if space <= 0 : out = s : return out
+	repeat space
+		out += " "
+	loop
+	out += s
+return out
+/**
+ * ディスクの情報を取得します(文字列型)
+ */
+#defcfunc getDiskInfoString int hSmart, int index, int type
+	// 格納に必要なサイズを取得
+	size = smart_GetInfoStringSizeW@(hSmart, index, type)
+	sdim buf, size + 2
+	// モデル名取得
+	smart_GetInfoStringW@ hSmart, index, type, buf, size
+return cnvwtos(buf)
+/**
+ * ディスクの情報を取得します(32bit数値型)
+ */
+#defcfunc getDiskInfoInt int hSmart, int index, int type
+	outInfo = 0
+	smart_GetInfoInt hSmart, index, type, outInfo
+	if stat < 0{
+		return ""
+	}
+return str(outInfo)
+/**
+ * ディスク容量をGBに変換します
+ */
+#defcfunc getDiskSize str inSize
+return str(int((1.0 * int(inSize)) / 1000)) + " GB"
+#global
+
+#define MAX_LENGTH_ALL 76
+#define MAX_LENGTH_INFONAME 16
+#define VERSION "1.00"
+#define SPLITTER "----------------------------------------------------------------------------"
+#define CRLF "\n"
+
+	status = "Unknown", "OK", "Warning", "NG"
+
+	// 管理者権限を持っているかどうか？
+	if smart_IsCurrentUserLocalAdministrator() == 0{
+		mes "You must have admin privileges!"
+		end
+	}
+
+	mes SPLITTER
+	mes " SampleDiskInfo " + VERSION + ""
+	mes mesRight("Distributor : https://hsp.moe/", MAX_LENGTH_ALL)
+	mes SPLITTER
+	mes " [ Disk List ]"
+	mes SPLITTER
+
+	// 初期化
+	hSmart = smart_Init()
+	// USB/IEEE1394接続のHDDを検出対象にする
+	smart_SetUSB1394 hSmart, FLAG_USB_ALL
+	// IDE/ATA_PASS_THROUGH を使用します(問題がある場合はOFFに)
+	smart_SetAtaPassThroughSmart hSmart, 1
+	// IntelRAID環境下でCSMIを自動有効にする
+	smart_SetCsmiType hSmart, CSMI_TYPE_ENABLE_AUTO
+	
+	// ディスクを検出する
+	smart_DiskScan hSmart, 1, 1, 0, 1, 1, 0
+
+	if smart_GetCount(hSmart) <= 0{
+		mes "Disk can not be found!"
+		smart_UnInit hSmart
+		end
+	}
+
+	// ディスクの一覧を表示
+	repeat smart_GetCount(hSmart)
+		// 健康状態の基準値(閾値)を指定
+		smart_SetThreshold hSmart, cnt, 1, 1, 1, 10
+		mes " [" + (cnt + 1) + " - " + status(smart_CheckDiskStatus(hSmart, cnt)) + "] " + getDiskInfoString(hSmart, cnt, INFO_MODEL)
+	loop
+
+	mes SPLITTER
+
+	// ディスクごとの情報を表示
+	repeat smart_GetCount(hSmart)
+
+		// ディスクの情報を更新(S.M.A.R.T.以外)
+		smart_UpdateIdInfo hSmart, cnt
+		// ディスクのS.M.A.R.T.情報を更新
+		smart_UpdateSmartInfo hSmart, cnt
+	
+		mes SPLITTER
+		mes " [" + (cnt + 1) + "] " + getDiskInfoString(hSmart, cnt, INFO_MODEL)
+		mes SPLITTER
+
+		// ディスクの情報を表示します。
+		mes " [ DiskInfo ]"
+		
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISSSD) == "1"){
+			type = "SSD "
+		}else{
+			type = "HDD "
+		}
+		type += "" + getDiskInfoString(hSmart, cnt, INFO_DEVICENOMINALFORMFACTOR) + " "
+		type += "(" + getDiskInfoString(hSmart, cnt, INFO_INTERFACE) + " "
+		type += "" + getDiskInfoString(hSmart, cnt, INFO_MAXTRANSFERMODE) + ")"
+		
+		mes mesRight("Type", MAX_LENGTH_INFONAME) + " : " + type
+		mes mesRight("Status", MAX_LENGTH_INFONAME) + " : " + status(smart_CheckDiskStatus(hSmart, cnt))
+		mes mesRight("Model", MAX_LENGTH_INFONAME) + " : " + getDiskInfoString(hSmart, cnt, INFO_MODEL)
+		mes mesRight("Firmware", MAX_LENGTH_INFONAME) + " : " + getDiskInfoString(hSmart, cnt, INFO_FIRMWAREREV)
+		mes mesRight("Serial Number", MAX_LENGTH_INFONAME) + " : "+ getDiskInfoString(hSmart, cnt, INFO_SERIALNUMBER)
+		mes mesRight("Disk Size", MAX_LENGTH_INFONAME) + " : " + getDiskSize(getDiskInfoInt(hSmart, cnt, INFO_TOTALDISKSIZE))
+		mes mesRight("Interface", MAX_LENGTH_INFONAME) + " : " + getDiskInfoString(hSmart, cnt, INFO_INTERFACE)
+		mes mesRight("Major Version", MAX_LENGTH_INFONAME) + " : " + getDiskInfoString(hSmart, cnt, INFO_MAJORVERSION)
+		mes mesRight("Minor Version", MAX_LENGTH_INFONAME) + " : " + getDiskInfoString(hSmart, cnt, INFO_MINORVERSION)
+		tmp =  mesRight("Transfer Mode", MAX_LENGTH_INFONAME) + " : "
+		tmp += getDiskInfoString(hSmart, cnt, INFO_CURRENTTRANSFERMODE) + " | " + getDiskInfoString(hSmart, cnt, INFO_MAXTRANSFERMODE)
+		mes tmp
+		mes mesRight("Power On Hours", MAX_LENGTH_INFONAME) + " : " + getDiskInfoInt(hSmart, cnt, INFO_DETECTEDPOWERONHOURS)
+		mes mesRight("Power On Count", MAX_LENGTH_INFONAME) + " : " + getDiskInfoInt(hSmart, cnt, INFO_POWERONCOUNT)
+		mes mesRight("Temperature", MAX_LENGTH_INFONAME) + " : " + getDiskInfoInt(hSmart, cnt, INFO_TEMPERATURE) + "C"
+		mes mesRight("Drive Map", MAX_LENGTH_INFONAME) + " : " + getDiskInfoString(hSmart, cnt, INFO_DRIVEMAP)
+
+		features = ""
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISSMARTENABLED) == "1"){
+			features += "S.M.A.R.T., "
+		}
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISLBA48SUPPORTED) == "1"){
+			features += "48bit LBA, "
+		}
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISAAMSUPPORTED) == "1"){
+			features += "AAM, "
+		}
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISAPMSUPPORTED) == "1"){
+			features += "APM, "
+		}
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISNCQSUPPORTED) == "1"){
+			features += "NCQ, "
+		}
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISNVCACHESUPPORTED) == "1"){
+			features += "NVCache, "
+		}
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISTRIMSUPPORTED) == "1"){
+			features += "Trim, "
+		}
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISDEVICESLEEPSUPPORTED) == "1"){
+			features += "DevSleep, "
+		}
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISNVME) == "1"){
+			features += "NVMe, "
+		}
+		if (getDiskInfoInt(hSmart, cnt, INFO_ISUASP) == "1"){
+			features += "UASP, "
+		}
+		features = strtrim(features, 2, ' ')
+		features = strtrim(features, 2, ',')
+		
+		mes mesRight("Features", MAX_LENGTH_INFONAME) + " : " + features
+
+		if (getDiskInfoInt(hSmart, cnt, INFO_NOMINALMEDIAROTATIONRATE) == "1"){
+			// SSDの場合
+			mes mesRight("Host Reads", MAX_LENGTH_INFONAME) + " : " + getDiskInfoInt(hSmart, cnt, INFO_HOSTREADS)
+			mes mesRight("Host Writes", MAX_LENGTH_INFONAME) + " : " + getDiskInfoInt(hSmart, cnt, INFO_HOSTWRITES)
+			mes mesRight("Erased Data(GB)", MAX_LENGTH_INFONAME) + " : " + getDiskInfoInt(hSmart, cnt, INFO_GBYTESERASED)
+			mes mesRight("NAND Writes", MAX_LENGTH_INFONAME) + " : " + getDiskInfoInt(hSmart, cnt, INFO_NANDWRITES)
+			mes mesRight("Wear Level Ct", MAX_LENGTH_INFONAME) + " : " + getDiskInfoInt(hSmart, cnt, INFO_WEARLEVELINGCOUNT)
+			mes mesRight("Life", MAX_LENGTH_INFONAME) + " : " + getDiskInfoInt(hSmart, cnt, INFO_LIFE) + "%"
+		}else{
+			// HDDの場合
+			mes mesRight("Rotation Rate", MAX_LENGTH_INFONAME) + " : " + getDiskInfoInt(hSmart, cnt, INFO_NOMINALMEDIAROTATIONRATE) + "rpm"
+		}
+
+		mes SPLITTER
+		
+		// ディスクのS.M.A.R.T.を表示します。
+		mes " [ S.M.A.R.T. ]"
+		
+		// S.M.A.R.T.情報格納変数初期化
+		smart_max = smart_GetSmartMaxAttribute()
+		dim Id, smart_max
+		dim StatusFlags, smart_max
+		dim CurrentValue, smart_max
+		dim WorstValue, smart_max
+		dim ThresholdValue, smart_max
+		ddim RawValue, smart_max
+		sdim out_smart, MAX_LENGTH_ALL
+		keyname = getDiskInfoString(hSmart, cnt, INFO_SMARTKEYNAME)
+
+		mes "ID Cur Wor Thr Raw Values   Attribute Name"
+
+		// S.M.A.R.T. のデータ取得
+		smart_GetSmartInfoInt64Ex hSmart, cnt, Id, StatusFlags, CurrentValue, WorstValue, ThresholdValue, RawValue
+		repeat smart_max
+			if Id.cnt != 0 {
+				out_smart = strf("%02X", Id.cnt) + " "
+				out_smart += mesRight(strf("%d", CurrentValue.cnt), 3) + " "
+				out_smart += mesRight(strf("%d", WorstValue.cnt), 3) + " "
+				out_smart += mesRight(strf("%d", ThresholdValue.cnt), 3) + " "
+				out_smart += strf("%012I64X", RawValue.cnt) + " "
+				out_smart += smart_GetSmartAttributeName(keyname, Id.cnt, dir_cur + "\\smart.ini")
+				mes out_smart
+			}
+		loop
+		
+		mes SPLITTER
+		
+	loop
+
+// デバッグモードのときは終了しません
+#ifndef _debug
+	end
+#endif
