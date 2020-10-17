@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="ソース ファイル">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="ソース ファイル\CDI">
+      <UniqueIdentifier>{c0f9d856-e509-4023-ae8f-f848774194f2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="ヘッダー ファイル">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hpp;hxx;hm;inl;inc;xsd</Extensions>
+    </Filter>
+    <Filter Include="ヘッダー ファイル\CDI">
+      <UniqueIdentifier>{40fe69a4-78b2-4ab4-bc29-47c977115cca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="リソース ファイル">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav</Extensions>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="dllmain.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="hspsmart.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>ソース ファイル</Filter>
+    </ClCompile>
+    <ClCompile Include="AtaSmart.cpp">
+      <Filter>ソース ファイル\CDI</Filter>
+    </ClCompile>
+    <ClCompile Include="DebugPrint.cpp">
+      <Filter>ソース ファイル\CDI</Filter>
+    </ClCompile>
+    <ClCompile Include="GetFileVersion.cpp">
+      <Filter>ソース ファイル\CDI</Filter>
+    </ClCompile>
+    <ClCompile Include="GetOsInfo.cpp">
+      <Filter>ソース ファイル\CDI</Filter>
+    </ClCompile>
+    <ClCompile Include="IsCurrentUserLocalAdministrator.cpp">
+      <Filter>ソース ファイル\CDI</Filter>
+    </ClCompile>
+    <ClCompile Include="NVMeInterpreter.cpp">
+      <Filter>ソース ファイル\CDI</Filter>
+    </ClCompile>
+    <ClCompile Include="SlotSpeedGetter.cpp">
+      <Filter>ソース ファイル\CDI</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="hspsmart.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="hspsmart_defines.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="hspsmart_exports.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="stdafx.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="targetver.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
+    <ClInclude Include="AtaSmart.h">
+      <Filter>ヘッダー ファイル\CDI</Filter>
+    </ClInclude>
+    <ClInclude Include="DebugPrint.h">
+      <Filter>ヘッダー ファイル\CDI</Filter>
+    </ClInclude>
+    <ClInclude Include="GetFileVersion.h">
+      <Filter>ヘッダー ファイル\CDI</Filter>
+    </ClInclude>
+    <ClInclude Include="GetOSInfo.h">
+      <Filter>ヘッダー ファイル\CDI</Filter>
+    </ClInclude>
+    <ClInclude Include="IsCurrentUserLocalAdministrator.h">
+      <Filter>ヘッダー ファイル\CDI</Filter>
+    </ClInclude>
+    <ClInclude Include="NVMeInterpreter.h">
+      <Filter>ヘッダー ファイル\CDI</Filter>
+    </ClInclude>
+    <ClInclude Include="SlotSpeedGetter.h">
+      <Filter>ヘッダー ファイル\CDI</Filter>
+    </ClInclude>
+    <ClInclude Include="SPTIUtil.h">
+      <Filter>ヘッダー ファイル\CDI</Filter>
+    </ClInclude>
+    <ClInclude Include="StorageQuery.h">
+      <Filter>ヘッダー ファイル\CDI</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Manifest Include="DeclareDPIAware.manifest">
+      <Filter>リソース ファイル</Filter>
+    </Manifest>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="hspsmart.def">
+      <Filter>リソース ファイル</Filter>
+    </None>
+    <None Include="ReadMe.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="hspsmart.rc">
+      <Filter>リソース ファイル</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+</Project>
